@@ -2,6 +2,7 @@ import pandas as pd
 from decouple import config
 import requests
 import numpy as np
+import sys
 
 
 class Fetcher():
@@ -13,24 +14,22 @@ class Fetcher():
     api_features = ['mean(surface_air_pressure P1D)', 'mean(water_vapor_partial_pressure_in_air P1D)', 'mean(relative_humidity P1D)', 'specific_humidity', 'mean(cloud_area_fraction P1D)',
                     'mean(air_temperature P1D)', 'max(max(wind_speed PT1H) P1D)', 'sum(precipitation_amount P1D)', 'boolean_overcast_weather(cloud_area_fraction P1D)']
 
-    __parameters = {
-        'sources': 'SN68860',  # Trondheim, Voll
-        'elements': ','.join(api_features),
-        # 'elements': 'mean(surface_air_pressure P1D),mean(water_vapor_partial_pressure_in_air P1D),mean(relative_humidity P1D),mean(specific_humidity P1D),mean(cloud_area_fraction P1D),mean(air_temperature P1D),max(mean(wind_speed PT1H) P1D),sum(precipitation_amount P1D),boolean_overcast_weather(cloud_area_fraction P1D)',
-        'referencetime': '2002-01-01/2002-01-07', 'timeoffsets': 'default'
-    }
-
     __column_names = (
         'air_pressure', 'water_vapor_pressure', 'relative_air_humidity', 'specific_air_humidity', 'average_cloud_cover', 'temperature', 'wind_speed', 'downfall', 'cloudy_weather'
-
-        # 'air_pressure', 'water_vapor_pressure', 'relative_air_humidity', 'specific_air_humidity', 'average_cloud_cover', 'temperature', 'wind_speed', 'downfall', 'cloudy_weather'
     )
 
-    def fetch_data(self, date: str = None) -> pd.DataFrame:
+    def fetch_data(self, date_start: str, date_stop: str) -> pd.DataFrame:
+
+        parameters = {
+            'sources': 'SN68860',  # Trondheim, Voll
+            'elements': ','.join(Fetcher.api_features),
+            # 'elements': 'mean(surface_air_pressure P1D),mean(water_vapor_partial_pressure_in_air P1D),mean(relative_humidity P1D),mean(specific_humidity P1D),mean(cloud_area_fraction P1D),mean(air_temperature P1D),max(mean(wind_speed PT1H) P1D),sum(precipitation_amount P1D),boolean_overcast_weather(cloud_area_fraction P1D)',
+            'referencetime': '{}/{}'.format(date_start, date_stop), 'timeoffsets': 'default'
+        }
         column_names = Fetcher.__column_names
 
         # TODO: add Session to increase performance
-        r = requests.get(Fetcher.__base_url, Fetcher.__parameters,
+        r = requests.get(Fetcher.__base_url, parameters,
                          auth=(Fetcher.__client_id, ''))
         print(r.url)
 
@@ -43,6 +42,7 @@ class Fetcher():
             print('Error! Returned status code %s' % r.status_code)
             print('Message: %s' % json['error']['message'])
             print('Reason: %s' % json['error']['reason'])
+            sys.exit()
 
         df = pd.DataFrame()
 
@@ -80,4 +80,6 @@ class Fetcher():
         for x in range(len(column_names)):
             df[column_names[x]] = features_list[x]
 
+        df.set_index('date')
+        df.dropna(how='all', axis='columns', inplace=True)
         return df

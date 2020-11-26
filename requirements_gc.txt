@@ -1,0 +1,12 @@
+# Function dependencies, for example:
+# package>=version
+pandas==1.1.3
+requests==2.24.0
+requests-oauthlib==1.3.0
+numpy==1.18.5
+Flask==1.1.2
+Flask-Cors==3.0.9
+python-decouple==3.3
+google-api-python-client==1.12.5
+google-api-core==1.23.0
+oauth2client==4.1.3
